@@ -22,7 +22,6 @@ _PROPERTY_HEADERS = 'properties'
 _TAGS_HEADERS = 'tags'
 _DEPRECATED_HEADERS = 'deprecated'
 _SECURITY_HEADERS = 'security'
-_PARENT_HEADERS = 'parent'
 
 # data processors
 # objects
