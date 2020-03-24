@@ -255,7 +255,7 @@ _ALL_HEADERS_REGEX = re.compile("^(" + _ALL_HEADERS + ")$", re.IGNORECASE)
 _SECTION_HEADER_REGEX = re.compile(r"^([\w ]+):$")
 _DEPRECATED_HEADER_REGEX = re.compile(
     r"^(deprecated|\[deprecated\])$", re.IGNORECASE)
-_DISCRIMINATOR_HEADER_REGEX = re.compile(r"^(discriminator:) ?([\w]+)")
+_DISCRIMINATOR_HEADER_REGEX = re.compile(r"^(discriminator:) ?([\w]+)", re.IGNORECASE)
 
 S_START = 0
 S_SUMMARY = 1
@@ -397,6 +397,8 @@ FSM_MAP = (
      'condition': _is_section_header, 'callback': _transition_processbuffer_new_section},
     {'src': S_SECTION, 'dst': S_END,
      'condition': _is_end, 'callback': _transition_processbuffer},
+    {'src': S_SECTION, 'dst': S_BLANK,
+     'condition': _is_blank_line, 'callback': _transition_processbuffer},
     {'src': S_START, 'dst': S_END, 'condition': _is_end,
      'callback': _transition_processbuffer},
     {'src': S_BLANK, 'dst': S_END, 'condition': _is_end,
@@ -411,6 +413,8 @@ FSM_MAP = (
      'callback': _transition_blank},
     {'src': S_DISCRIMINATOR, 'dst': S_SECTION, 'condition': _is_section_header,
      'callback': _transition_section},
+    {'src': S_DISCRIMINATOR, 'dst': S_BLANK, 'condition': _is_blank_line,
+     'callback': _transition_blank},
     {'src': S_SECTION, 'dst': S_DISCRIMINATOR, 'condition': _is_discriminator,
      'callback': _transition_processbuffer_discriminator}
 )
