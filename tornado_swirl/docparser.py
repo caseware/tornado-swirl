@@ -337,6 +337,8 @@ def _transition_processbuffer_discriminator(fsm_obj):
 
 def _is_generic_line(line):
     line = line.strip()
+    if _DISCRIMINATOR_HEADER_REGEX.match(line):
+        return False
     if _SECTION_HEADER_REGEX.match(line):
         return False
     if _DEPRECATED_HEADER_REGEX.match(line):
