@@ -31,6 +31,7 @@ class SchemaSpec(object):
         self.properties = {}
         self.example = None
         self.examples = None
+        self.discriminator = None
 
 
 class Param(object):

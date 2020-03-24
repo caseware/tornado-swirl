@@ -5,7 +5,6 @@ Returns:
     [type] -- [description]
 """
 
-
 import numbers
 import re
 
@@ -23,6 +22,7 @@ _PROPERTY_HEADERS = 'properties'
 _TAGS_HEADERS = 'tags'
 _DEPRECATED_HEADERS = 'deprecated'
 _SECURITY_HEADERS = 'security'
+_PARENT_HEADERS = 'parent'
 
 # data processors
 # objects
@@ -33,11 +33,13 @@ RESPONSE_MATCHER = re.compile(RESPONSE_REGEX, re.IGNORECASE)
 ERRORSPEC_REGEX = r"^(?P<code>\d+)\s*--\s*(?P<description>.*)$"
 ERRORSPEC_MATCHER = re.compile(ERRORSPEC_REGEX, re.IGNORECASE)
 
+
 # _PROP_SPEC_REGEX = re.compile("(?P<name>\w+): (?P<value>\w[\w\s]*)")}
 
 
 class Number(numbers.Number):
     """Convenience type class to represent float or int"""
+
     def __new__(cls, val):
         if str(val).find('.'):
             try:
@@ -52,6 +54,7 @@ class Number(numbers.Number):
 
 class Boolean(object):
     """Convenience type class to convert bool values"""
+
     def __new__(cls, val):
         return val in ('True', 'true', '1', True)
 
@@ -135,9 +138,9 @@ def _get_description_props(description):
 
     index = description.rfind(':')
     while index > -1:
-        description, value = description[0:index], description[index+1:]
+        description, value = description[0:index], description[index + 1:]
         boundary = max(description.rfind(' '), description.rfind('\n'))
-        description, name = description[0:boundary], description[boundary+1:]
+        description, name = description[0:boundary], description[boundary + 1:]
         kwargs[name] = _get_real_value(name, value.strip())
         index = description.rfind(':')
 
@@ -242,16 +245,17 @@ _HEADERS = {
     _PROPERTY_HEADERS: (r"(propert(y|ies):)", _process_properties),
     _TAGS_HEADERS: (r"tag(s?):", _process_tags),
     _DEPRECATED_HEADERS: (r"(deprecated|\[deprecated\])", _process_deprecated),
-    _SECURITY_HEADERS: (r"security:", _process_security)
+    _SECURITY_HEADERS: (r"security:", _process_security),
 }
 
-_HEADERS_REGEX = {key: (re.compile("^"+val+"$", re.IGNORECASE), processor)
+_HEADERS_REGEX = {key: (re.compile("^" + val + "$", re.IGNORECASE), processor)
                   for (key, (val, processor)) in _HEADERS.items()}
 _ALL_HEADERS = '|'.join([rs for (rs, _) in _HEADERS.values()])
-_ALL_HEADERS_REGEX = re.compile("^("+_ALL_HEADERS+")$", re.IGNORECASE)
+_ALL_HEADERS_REGEX = re.compile("^(" + _ALL_HEADERS + ")$", re.IGNORECASE)
 _SECTION_HEADER_REGEX = re.compile(r"^([\w ]+):$")
 _DEPRECATED_HEADER_REGEX = re.compile(
     r"^(deprecated|\[deprecated\])$", re.IGNORECASE)
+_DISCRIMINATOR_HEADER_REGEX = re.compile(r"^(discriminator:) ?([\w]+)")
 
 S_START = 0
 S_SUMMARY = 1
@@ -259,6 +263,7 @@ S_DESCRIPTION = 2
 S_END = 3
 S_BLANK = 4
 S_SECTION = 5
+S_DISCRIMINATOR = 6
 
 
 # transitions
@@ -316,6 +321,17 @@ def _transition_description(fsm_obj):
     fsm_obj.spec.description += fsm_obj.buffer
     fsm_obj.buffer = ""
 
+
+def _transition_discriminator(fsm_obj):
+    discriminator = _DISCRIMINATOR_HEADER_REGEX.findall(fsm_obj.current_line)[0][1]
+    fsm_obj.spec.discriminator = discriminator
+
+
+def _transition_processbuffer_discriminator(fsm_obj):
+    _transition_processbuffer(fsm_obj)
+    _transition_discriminator(fsm_obj)
+
+
 # conditions
 
 
@@ -349,6 +365,11 @@ def _is_section_header(line):
     return _SECTION_HEADER_REGEX.match(stripped) or _DEPRECATED_HEADER_REGEX.match(stripped)
 
 
+def _is_discriminator(line):
+    stripped = line.strip()
+    return _DISCRIMINATOR_HEADER_REGEX.match(stripped)
+
+
 FSM_MAP = (
     {'src': S_START, 'dst': S_SUMMARY, 'condition': _is_generic_line,
      'callback': _transitionbuffer},
@@ -380,6 +401,16 @@ FSM_MAP = (
      'callback': _transition_processbuffer},
     {'src': S_DESCRIPTION, 'dst': S_END, 'condition': _is_end,
      'callback': _transition_processbuffer},
+    {'src': S_START, 'dst': S_DISCRIMINATOR, 'condition': _is_discriminator,
+     'callback': _transition_discriminator},
+    {'src': S_BLANK, 'dst': S_DISCRIMINATOR, 'condition': _is_discriminator,
+     'callback': _transition_discriminator},
+    {'src': S_DISCRIMINATOR, 'dst': S_END, 'condition': _is_end,
+     'callback': _transition_blank},
+    {'src': S_DISCRIMINATOR, 'dst': S_SECTION, 'condition': _is_section_header,
+     'callback': _transition_section},
+    {'src': S_SECTION, 'dst': S_DISCRIMINATOR, 'condition': _is_discriminator,
+     'callback': _transition_processbuffer_discriminator}
 )
 
 
