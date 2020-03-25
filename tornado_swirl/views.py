@@ -147,7 +147,7 @@ class SwaggerApiHandler(tornado.web.RequestHandler):
             obj['description'] = specs[0].description or specs[0].summary
 
             if specs[0].discriminator:
-                obj['discriminator'] = specs[0].discriminator
+                obj['discriminator'] = {"propertyName": specs[0].discriminator}
 
             if required:
                 obj.update({"required": required})
