@@ -60,7 +60,7 @@ class Boolean(object):
 
 _PROPS_TYPE_LOOKUP = {
     Boolean: ('exclusiveMinimum', 'exclusiveMaximum', 'uniqueItems',
-              'allowEmptyValue', 'deprecated', 'readOnly', 'writeOnly'),
+              'allowEmptyValue', 'deprecated', 'readOnly', 'writeOnly', 'additionalProperties'),
     Number: ('minimum', 'maximum', 'multipleOf', 'minItems',
              'maxItems', 'maxLength', 'minLength', 'uniqueItems',
              'minProperties', 'maxProperties')
