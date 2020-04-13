@@ -142,13 +142,18 @@ class BoolType(SchemaMixin):
         self.kwargs = kwargs
         self.format = None
 
+
 class ObjectType(SchemaMixin):
     """Object type -- freeform"""
+
+    _ADDITIONAL_PROPERTIES = "additionalProperties"
+
     def __init__(self, **kwargs):
         self.name = 'object'
         self.kwargs = kwargs
-        self.kwargs.update({"additionalProperties": True})
         self.format = None
+        if self.kwargs.get(self._ADDITIONAL_PROPERTIES) is None:
+            self.kwargs.update({self._ADDITIONAL_PROPERTIES: True})
 
 
 # simple Types
